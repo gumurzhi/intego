@@ -1,5 +1,16 @@
 version: '3.4'
 services:
+   api_server:
+        depends_on:
+          - mongodb
+        build:
+          context: .
+          dockerfile: Dockerfile
+        command:  start
+        ports:
+          - 3000:3000
+        networks:
+          - intego
    mongodb:
         image: mongo:latest
         container_name: "mongodb"

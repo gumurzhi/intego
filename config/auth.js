@@ -13,13 +13,13 @@ passport.deserializeUser(async function (user, done) {
         done(err)
     }
 });
-
 const BasicStrategy = require('passport-http').BasicStrategy;
+
 passport.use(new BasicStrategy(function (username, password, done) {
-    userService.getBuUsername(username)
+    userService.getBuUsername(username, true)
         .then(user => {
             if (user && user.validPassword(password)) {
-                done(null, user)
+                done(null, user.toObject())
             } else {
                 done(null, false)
             }

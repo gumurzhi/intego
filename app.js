@@ -1,6 +1,5 @@
 const createError = require('http-errors')
     , express = require('express')
-    , path = require('path')
     , cookieParser = require('cookie-parser')
     , logger = require('./helper/logger')(module)
     , passport = require("passport")
@@ -9,21 +8,15 @@ const createError = require('http-errors')
     , MongoStore = require('connect-mongo')(session)
     , mongo = require('./lib/mongo')
     , app = express()
+    , routeProcessor = require('./routes/routerProcessor')
+    , bodyParser = require('body-parser')
 ;
 
-//var indexRouter = require('./routes/index');
-//var usersRouter = require('./routes/users');
-
-
-// view engine setup
-//app.set('views', path.join(__dirname, 'views'));
-//app.set('view engine', 'jade');
-
-//app.use(logger.debug);
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
+app.use(bodyParser.json())
 app.use(cookieParser());
-//app.use(express.static(path.join(__dirname, 'public')));
+routeProcessor(app, false);
 
 app.use(session({
     secret: appConfig.sessionSecret,
@@ -34,31 +27,30 @@ app.use(session({
     saveUninitialized: false
 }));
 
-
 require('./config/auth');
 app.use(passport.initialize());
 app.use(passport.session());
-
-// app.use('/', indexRouter);
-// app.use('/users', usersRouter);
 
 app.use((req, res, next) => {
     if (req.isAuthenticated()) {
         logger.info('user is isAuthenticated');
         return next();
     }
-    logger.debug(`user's session n ot found, try to authenticate`);
-    passport.authenticate('basic', (err, user, options) => {
+    logger.debug(`user's session not found, try to authenticate`);
+    passport.authenticate('basic', (err, user, info) => {
         if (user) {
             logger.debug(`user ${user.username} is authorized`);
-            req.login(user);
+            req.logIn(user, function (err) {
+                return !!err ? next(err) : next();
+            });
         } else {
-            res.status(401);
+            next(createError(401));
         }
         return next();
-    })
-})
+    })(req, res, next);
+});
 
+routeProcessor(app, true);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
     next(createError(404));
@@ -72,7 +64,7 @@ app.use(function (err, req, res, next) {
 
     // render the error page
     res.status(err.status || 500);
-    res.render('error');
+    res.send('error');
 });
 
 module.exports = app;

@@ -1,7 +1,7 @@
-FROM node:9
+FROM node:10
 ADD init.sh /opt/init.sh
 RUN chmod 777 /opt/init.sh
-WORKDIR /opt/ttest
+WORKDIR /opt/intego
 
 COPY package*.json ./
 
